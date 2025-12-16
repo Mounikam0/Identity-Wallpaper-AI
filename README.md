@@ -20,9 +20,9 @@ If you are developing a production application, we recommend using TypeScript wi
    ```bash
    git clone https://github.com/Mounikam0/Identity-Wallpaper-AI.git
 2. Navigate to the project directory
-    cd Identity-Wallpaper-AI
+     -cd Identity-Wallpaper-AI
 3. Install dependencies
-    npm install
+    -npm install
 4. Start the development server
-    npm run dev
+    -npm run dev
 
