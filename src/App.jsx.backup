@@ -1,0 +1,176 @@
+import { useState, useEffect } from "react";
+import { buildPrompt } from "./utils/promptBuilder";
+
+export default function App() {
+  const [role, setRole] = useState("Focused professional");
+  const [mindset, setMindset] = useState("Deep focus");
+  const [style, setStyle] = useState("Soft neutral light");
+  const [device, setDevice] = useState("mobile");
+  const [accentColor, setAccentColor] = useState("#667eea");
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState("dark");
+  const [history, setHistory] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem("wallpaper-history");
+    const savedFavorites = localStorage.getItem("wallpaper-favorites");
+    const savedTheme = localStorage.getItem("theme");
+    
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
+    if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+    if (savedTheme) setTheme(savedTheme);
+  }, []);
+
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem("wallpaper-history", JSON.stringify(history));
+  }, [history]);
+
+  useEffect(() => {
+    localStorage.setItem("wallpaper-favorites", JSON.stringify(favorites));
+  }, [favorites]);
+
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+    document.body.setAttribute("data-theme", theme);
+  }, [theme]);
+
+  async function generateImage() {
+    setLoading(true);
+    setImage(null);
+
+    const prompt = buildPrompt(role, mindset, style, device, accentColor);
+    console.log("Generated prompt:", prompt);
+
+    const encodedPrompt = encodeURIComponent(prompt);
+    const seed = Math.floor(Math.random() * 100000);
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=1344&seed=${seed}&nologo=true`;
+
+    setTimeout(() => {
+      setImage(imageUrl);
+      setLoading(false);
+      
+      // Add to history
+      const newEntry = {
+        url: imageUrl,
+        timestamp: Date.now(),
+        role,
+        mindset,
+        style,
+        device,
+        accentColor
+      };
+      setHistory(prev => [newEntry, ...prev].slice(0, 20)); // Keep last 20
+    }, 1500);
+  }
+
+  function randomGenerate() {
+    const roles = ["Focused professional", "Creative thinker", "Founder / Builder", "Quiet achiever", "Student", "Minimalist"];
+    const mindsets = ["Deep focus", "Calm clarity", "Low-stress productivity", "Evening wind-down", "Morning energy", "Creative flow"];
+    const styles = ["Soft neutral light", "Muted dark elegance", "Warm minimal calm", "Cool modern stillness", "Pastel dreamscape", "Monochrome zen"];
+    const colors = ["#667eea", "#f093fb", "#4facfe", "#43e97b", "#fa709a", "#feca57"];
+
+    setRole(roles[Math.floor(Math.random() * roles.length)]);
+    setMindset(mindsets[Math.floor(Math.random() * mindsets.length)]);
+    setStyle(styles[Math.floor(Math.random() * styles.length)]);
+    setAccentColor(colors[Math.floor(Math.random() * colors.length)]);
+    
+    setTimeout(() => generateImage(), 100);
+  }
+
+  function downloadImage(url = image) {
+    if (!url) return;
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `wallpaper-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function addToFavorites(url = image) {
+    if (!url) return;
+    
+    const newFav = {
+      url,
+      timestamp: Date.now(),
+      role,
+      mindset,
+      style
+    };
+    
+    setFavorites(prev => [newFav, ...prev]);
+  }
+
+  function removeFromFavorites(timestamp) {
+    setFavorites(prev => prev.filter(fav => fav.timestamp !== timestamp));
+  }
+
+  function isFavorite(url) {
+    return favorites.some(fav => fav.url === url);
+  }
+
+  function loadFromHistory(entry) {
+    setRole(entry.role);
+    setMindset(entry.mindset);
+    setStyle(entry.style);
+    setDevice(entry.device);
+    setAccentColor(entry.accentColor);
+    setImage(entry.url);
+    setShowHistory(false);
+  }
+
+  function toggleTheme() {
+    setTheme(prev => prev === "dark" ? "light" : "dark");
+  }
+
+  function clearHistory() {
+    if (confirm("Clear all history?")) {
+      setHistory([]);
+    }
+  }
+
+  return (
+    <div className="app-container">
+      <div className="header">
+        <h1>🎨 Identity Wallpaper AI</h1>
+        <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
+      </div>
+      
+      <p className="subtitle">Generate wallpapers that match your vibe</p>
+
+      <div className="tabs">
+        <button 
+          className={`tab-btn ${!showHistory && !showFavorites ? 'active' : ''}`}
+          onClick={() => { setShowHistory(false); setShowFavorites(false); }}
+        >
+          🎨 Create
+        </button>
+        <button 
+          className={`tab-btn ${showHistory ? 'active' : ''}`}
+          onClick={() => { setShowHistory(true); setShowFavorites(false); }}
+        >
+          📜 History ({history.length})
+        </button>
+        <button 
+          className={`tab-btn ${showFavorites ? 'active' : ''}`}
+          onClick={() => { setShowFavorites(true); setShowHistory(false); }}
+        >
+          ⭐ Favorites ({favorites.length})
+        </button>
+      </div>
+
+      {!showHistory && !showFavorites && (
+        <>
+          <div className="form-group">
+            <label>👤 Your Role</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option>F
