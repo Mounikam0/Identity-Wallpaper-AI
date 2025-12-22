@@ -26,3 +26,4 @@ If you are developing a production application, we recommend using TypeScript wi
 4. Start the development server
     -npm run dev
 
+visit this line to view : https://mounikam0.github.io/Identity-Wallpaper-AI/
